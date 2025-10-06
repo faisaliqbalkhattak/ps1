@@ -3,8 +3,12 @@
  */
 package twitter;
 
+import java.time.Instant;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Extract consists of methods that extract information from a list of tweets.
@@ -24,7 +28,17 @@ public class Extract {
      *         every tweet in the list.
      */
     public static Timespan getTimespan(List<Tweet> tweets) {
-        throw new RuntimeException("not implemented");
+        if(tweets.isEmpty()) throw new IllegalArgumentException("no tweets not a spec");
+        Instant min= tweets.get(0).getTimestamp();
+        Instant max =min;
+        for (Tweet t: tweets) {
+        	Instant ts = t.getTimestamp();
+        	if(ts.isBefore(min)) min= ts;
+        	if(ts.isAfter(max)) max = ts;
+        	
+        }
+        return new Timespan(min , max);
+        
     }
 
     /**
@@ -43,7 +57,17 @@ public class Extract {
      *         include a username at most once.
      */
     public static Set<String> getMentionedUsers(List<Tweet> tweets) {
-        throw new RuntimeException("not implemented");
+        		Set<String> users= new HashSet<>();
+        		Pattern p = Pattern.compile("(?i)(?<![A-Za-z0-9_])@([A-Za-z0-9_]+)");
+        	for (Tweet t:tweets) {
+        		Matcher m=p.matcher(t.getText());
+        		while(m.find()) {
+        			users.add(m.group(1).toLowerCase());
+        		}
+        	}
+            
+    return users;
     }
-
+    
+    
 }
