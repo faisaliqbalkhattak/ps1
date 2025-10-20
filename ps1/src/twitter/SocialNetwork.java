@@ -3,6 +3,10 @@
  */
 package twitter;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -41,7 +45,42 @@ public class SocialNetwork {
      *         either authors or @-mentions in the list of tweets.
      */
     public static Map<String, Set<String>> guessFollowsGraph(List<Tweet> tweets) {
-        throw new RuntimeException("not implemented");
+
+//    	creates adjacentcy lsit for the auther and its following
+    	 Map<String, Set<String>> followsGraph = new HashMap<>();
+
+         if (tweets == null) {
+             return followsGraph; // empty
+         }
+
+/*
+ * check all the tweets and get the author create an entry fo this author if not exists and then check the mentioned users if he mentioned
+ * him self ignore other wise add all this to his adjacency in a set data structure that will automatically ignore the duplicates*/
+         for (Tweet t : tweets) {
+             if (t == null) continue;
+
+             // normalize author
+             String author = t.getAuthor();
+             if (author == null) continue;
+             author = author.toLowerCase();
+
+             // ensure author exists as key
+             followsGraph.computeIfAbsent(author, k -> new HashSet<>());
+
+             // get the mentioned users for this single tweet
+             Set<String> mentioned = Extract.getMentionedUsers(Collections.singletonList(t));
+
+             // add each mentioned user (normalized) to author's follow-set, excluding self
+             for (String m : mentioned) {
+                 if (m == null) continue;
+                 String mentionedUser = m.toLowerCase();
+                 if (!mentionedUser.equals(author)) {
+                     followsGraph.get(author).add(mentionedUser);
+                 }
+             }
+         }
+
+         return followsGraph;
     }
 
     /**
@@ -54,7 +93,46 @@ public class SocialNetwork {
      *         descending order of follower count.
      */
     public static List<String> influencers(Map<String, Set<String>> followsGraph) {
-        throw new RuntimeException("not implemented");
+//    	return empty list is the graph is empty 
+    	  if (followsGraph == null) return new ArrayList<>();
+    	    // Count followers: user AND TEH NUMBER of followers for intermediate computations
+    	    Map<String, Integer> followerCount = new HashMap<>();
+
+    	    // Make sure every user that appears as a key exists in followerCount it may have 0 followers
+    	    /*
+    	     * the method 
+    	     * keySet() give the first entry of all the key value pairs in the graph that in our case we made them the authors
+    	     * and the 
+    	     * entrySet give all the entries as separate key list pairs
+    	     * 
+    	     * the program simple gets all the authors make their followers to zero and then for each of the followee of the author increment the 
+    	     * count of followers( if this influencer is not in the followerCount map<string,integer> then create it) of the mentioned user it can be another author.*/
+    	    for (String author : followsGraph.keySet()) {
+    	        followerCount.putIfAbsent(author, 0);
+    	    }
+    	    // For each author, each followee gets +1 follower
+    	    for (Map.Entry<String, Set<String>> e : followsGraph.entrySet()) {
+    	        Set<String> followees = e.getValue();
+    	        if (followees == null) continue;
+    	        for (String followee : followees) {
+    	            if (followee == null) continue;
+    	            followerCount.put(followee, followerCount.getOrDefault(followee, 0) + 1);
+    	        }
+    	    }
+
+//    	    at this step we have  list of user and no-of-followers pair but users are not sorted on the followers count and even then they may have same 
+//    	    number of followers but  i will sort the users with same following on the alphabetic order of their username
+    	    List<String> users = new ArrayList<>(followerCount.keySet());
+
+//    	    comparator function
+    	    users.sort((u1, u2) -> {
+    	        int c1 = followerCount.getOrDefault(u1, 0);
+    	        int c2 = followerCount.getOrDefault(u2, 0);
+    	        if (c1 != c2) return Integer.compare(c2, c1); // numeric descending (if not equal)
+    	        return u1.compareTo(u2);                     // alphabetic ascending (else)
+    	    });
+
+    	    return users;
     }
 
 }
